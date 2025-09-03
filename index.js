@@ -62,3 +62,25 @@ app.post('/generate-from-image', upload.single('image'), async (req, res) => {
         }
     }
 });
+
+// === DOCUMENT ENDPOINT ===
+app.post('/generate-from-document', upload.single('document'), async (req, res) => {
+    const filePath = req.file.path;
+    const buffer = fs.readFileSync(filePath);
+    const base64Data = buffer.toString('base64');
+    const mimeType = req.file.mimetype;
+
+    try {
+        const documentPart = {
+            inlineData: { data: base64Data, mimeType }
+        };
+
+        const result = await model.generateContent(['Analyze this document:', documentPart]);
+        const response = await result.response;
+        res.json({ output: response.text() });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    } finally {
+        fs.unlinkSync(filePath);
+    }
+});
